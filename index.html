@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Waste Disposal Game</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <!-- Google Fonts: Fredoka -->
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    body {
+      font-family: 'Fredoka', sans-serif;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    .dragging {
+      opacity: 0.4;
+      transform: scale(0.95);
+    }
+    @keyframes pulse-light {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.03); }
+    }
+    .bounce-selected {
+      animation: pulse-light 0.6s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 flex justify-center items-center min-h-screen p-0 sm:p-4">
+
+  <!-- Mobile Screen Frame (MIT App Inventor Layout) -->
+  <div class="w-full max-w-[420px] h-screen sm:h-[840px] bg-slate-100 flex flex-col justify-between shadow-2xl overflow-hidden relative sm:rounded-[36px] border-0 sm:border-[8px] border-slate-800">
+
+    <!-- Top Navigation Header -->
+    <header class="bg-emerald-600 text-white p-3.5 flex items-center justify-between shadow-md z-10">
+      <button onclick="handleBack()" class="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white text-sm font-semibold px-3 py-1.5 rounded-lg transition">
+        <i class="fa-solid font-bold fa-chevron-left"></i> Back
+      </button>
+      <h1 class="text-lg font-bold tracking-wide text-white drop-shadow">Waste Disposal</h1>
+      <button onclick="resetGame()" class="text-emerald-100 hover:text-white p-1" title="Reset Game">
+        <i class="fa-solid fa-rotate-right text-lg"></i>
+      </button>
+    </header>
+
+    <!-- Main Game Container -->
+    <main class="flex-1 flex flex-col p-3 gap-3 overflow-y-auto custom-scrollbar">
+
+      <!-- Status Bar -->
+      <div class="flex justify-between items-center bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-200">
+        <div class="text-xs text-slate-500 uppercase tracking-wider font-bold">
+          Progress: <span id="placedCount" class="text-emerald-600 text-sm font-extrabold">0</span> / 6 items
+        </div>
+        <div class="text-xs bg-emerald-100 text-emerald-800 font-bold px-2.5 py-1 rounded-full">
+          Level 1
+        </div>
+      </div>
+
+      <!-- Item Bank Area -->
+      <div class="bg-white rounded-2xl p-3 shadow-sm border border-slate-200 flex flex-col gap-2">
+        <div class="flex justify-between items-center">
+          <span class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+            <i class="fa-solid font-normal fa-box-open text-amber-500"></i> Items to Sort:
+          </span>
+          <span class="text-[11px] text-slate-400 font-medium">Drag or Tap to move</span>
+        </div>
+
+        <div id="itemsContainer" class="grid grid-cols-3 gap-2 min-h-[140px] p-2 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
+          <!-- Item Cards rendered by JS -->
+        </div>
+      </div>
+
+      <!-- Bins Section -->
+      <div class="grid grid-cols-2 gap-2 flex-1">
+
+        <!-- Recyclable Bin -->
+        <div data-bin="recyclable" onclick="onBinClick('recyclable')" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'recyclable')"
+          class="bin-box bg-blue-50 border-2 border-blue-400 hover:border-blue-600 rounded-2xl p-2.5 flex flex-col justify-between transition relative shadow-sm cursor-pointer group">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-blue-500 text-white flex items-center justify-center font-bold shadow-sm">
+              <i class="fa-solid fa-recycle text-base"></i>
+            </div>
+            <div>
+              <h2 class="text-xs font-bold text-blue-900 leading-tight">Recyclable</h2>
+              <p class="text-[10px] text-blue-600 font-medium">Paper, Plastic, Glass</p>
+            </div>
+          </div>
+          <div class="bin-items-slot min-h-[60px] my-1 bg-white/70 rounded-xl p-1.5 flex flex-wrap gap-1 content-start border border-blue-100"></div>
+          <div class="text-[10px] text-center font-bold text-blue-500 group-hover:underline">Drop Here</div>
+        </div>
+
+        <!-- Organic Bin -->
+        <div data-bin="organic" onclick="onBinClick('organic')" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'organic')"
+          class="bin-box bg-emerald-50 border-2 border-emerald-400 hover:border-emerald-600 rounded-2xl p-2.5 flex flex-col justify-between transition relative shadow-sm cursor-pointer group">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-emerald-500 text-white flex items-center justify-center font-bold shadow-sm">
+              <i class="fa-solid fa-leaf text-base"></i>
+            </div>
+            <div>
+              <h2 class="text-xs font-bold text-emerald-900 leading-tight">Organic</h2>
+              <p class="text-[10px] text-emerald-600 font-medium">Food scraps, Plants</p>
+            </div>
+          </div>
+          <div class="bin-items-slot min-h-[60px] my-1 bg-white/70 rounded-xl p-1.5 flex flex-wrap gap-1 content-start border border-emerald-100"></div>
+          <div class="text-[10px] text-center font-bold text-emerald-500 group-hover:underline">Drop Here</div>
+        </div>
+
+        <!-- General Waste Bin -->
+        <div data-bin="general" onclick="onBinClick('general')" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'general')"
+          class="bin-box bg-slate-100 border-2 border-slate-400 hover:border-slate-600 rounded-2xl p-2.5 flex flex-col justify-between transition relative shadow-sm cursor-pointer group">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-slate-600 text-white flex items-center justify-center font-bold shadow-sm">
+              <i class="fa-solid fa-trash-can text-base"></i>
+            </div>
+            <div>
+              <h2 class="text-xs font-bold text-slate-800 leading-tight">General Waste</h2>
+              <p class="text-[10px] text-slate-500 font-medium">Non-recyclable trash</p>
+            </div>
+          </div>
+          <div class="bin-items-slot min-h-[60px] my-1 bg-white/70 rounded-xl p-1.5 flex flex-wrap gap-1 content-start border border-slate-200"></div>
+          <div class="text-[10px] text-center font-bold text-slate-500 group-hover:underline">Drop Here</div>
+        </div>
+
+        <!-- Hazardous Waste Bin -->
+        <div data-bin="hazardous" onclick="onBinClick('hazardous')" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'hazardous')"
+          class="bin-box bg-rose-50 border-2 border-rose-400 hover:border-rose-600 rounded-2xl p-2.5 flex flex-col justify-between transition relative shadow-sm cursor-pointer group">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-rose-500 text-white flex items-center justify-center font-bold shadow-sm">
+              <i class="fa-solid fa-triangle-exclamation text-base"></i>
+            </div>
+            <div>
+              <h2 class="text-xs font-bold text-rose-900 leading-tight">Hazardous</h2>
+              <p class="text-[10px] text-rose-600 font-medium">Batteries, E-Waste</p>
+            </div>
+          </div>
+          <div class="bin-items-slot min-h-[60px] my-1 bg-white/70 rounded-xl p-1.5 flex flex-wrap gap-1 content-start border border-rose-100"></div>
+          <div class="text-[10px] text-center font-bold text-rose-500 group-hover:underline">Drop Here</div>
+        </div>
+
+      </div>
+    </main>
+
+    <!-- Bottom Submit Button -->
+    <footer class="p-3 bg-white border-t border-slate-200 shadow-lg z-10">
+      <button onclick="submitAnswers()" class="w-full bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] text-white font-bold text-base py-3 rounded-xl shadow-md transition flex items-center justify-center gap-2">
+        <i class="fa-solid fa-paper-plane"></i> Submit Sorting
+      </button>
+    </footer>
+
+    <!-- Results Modal -->
+    <div id="resultModal" class="hidden absolute inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-white w-full rounded-2xl p-5 shadow-2xl flex flex-col gap-4 text-center border border-slate-100 max-h-[90%] overflow-y-auto custom-scrollbar">
+        
+        <div id="modalIcon" class="w-16 h-16 rounded-full mx-auto flex items-center justify-center text-3xl shadow-inner"></div>
+
+        <div>
+          <h3 id="modalTitle" class="text-xl font-bold text-slate-800"></h3>
+          <p id="modalSubtitle" class="text-xs text-slate-500 mt-1"></p>
+        </div>
+
+        <!-- Breakdown List -->
+        <div id="modalList" class="flex flex-col gap-2 text-left bg-slate-50 p-3 rounded-xl border border-slate-200"></div>
+
+        <button onclick="closeModal()" class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold py-2.5 rounded-xl shadow transition">
+          Play Again
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Game Item Data
+    const ITEMS_DATA = [
+      { id: '1', name: 'Plastic Bottle', category: 'recyclable', icon: 'fa-bottle-water', color: 'text-blue-500' },
+      { id: '2', name: 'Banana Peel', category: 'organic', icon: 'fa-apple-whole', color: 'text-emerald-500' },
+      { id: '3', name: 'Used Battery', category: 'hazardous', icon: 'fa-battery-full', color: 'text-rose-500' },
+      { id: '4', name: 'Styrofoam Cup', category: 'general', icon: 'fa-box-open', color: 'text-slate-500' },
+      { id: '5', name: 'Newspaper', category: 'recyclable', icon: 'fa-newspaper', color: 'text-blue-500' },
+      { id: '6', name: 'Paint Can', category: 'hazardous', icon: 'fa-spray-can', color: 'text-rose-500' }
+    ];
+
+    let itemsState = {};
+    let selectedItemId = null;
+    let draggedItemId = null;
+
+    function initGame() {
+      itemsState = {};
+      selectedItemId = null;
+      ITEMS_DATA.forEach(item => {
+        itemsState[item.id] = 'bank';
+      });
+      render();
+    }
+
+    function render() {
+      const bankContainer = document.getElementById('itemsContainer');
+      bankContainer.innerHTML = '';
+
+      document.querySelectorAll('.bin-items-slot').forEach(slot => slot.innerHTML = '');
+
+      let placedTotal = 0;
+
+      ITEMS_DATA.forEach(item => {
+        const location = itemsState[item.id];
+        const isSelected = selectedItemId === item.id;
+
+        const el = document.createElement('div');
+        el.draggable = true;
+        el.dataset.id = item.id;
+        
+        // Touch & Mouse Drag Handlers
+        el.ondragstart = (e) => handleDragStart(e, item.id);
+        el.ondragend = handleDragEnd;
+
+        if (location === 'bank') {
+          el.className = `p-2 bg-white rounded-xl border-2 cursor-pointer flex flex-col items-center justify-center gap-1 transition shadow-sm hover:border-emerald-400 ${
+            isSelected ? 'border-emerald-500 ring-2 ring-emerald-200 bounce-selected' : 'border-slate-200'
+          }`;
+          el.onclick = (e) => {
+            e.stopPropagation();
+            selectedItemId = selectedItemId === item.id ? null : item.id;
+            render();
+          };
+          el.innerHTML = `
+            <i class="fa-solid ${item.icon} ${item.color} text-xl"></i>
+            <span class="text-[11px] font-bold text-slate-700 text-center leading-tight">${item.name}</span>
+          `;
+          bankContainer.appendChild(el);
+        } else {
+          placedTotal++;
+          const targetBinSlot = document.querySelector(`[data-bin="${location}"] .bin-items-slot`);
+          if (targetBinSlot) {
+            el.className = `px-2 py-1 bg-white rounded-lg border flex items-center gap-1.5 cursor-pointer shadow-sm hover:bg-slate-50 text-xs font-semibold ${
+              isSelected ? 'border-emerald-500 ring-1 ring-emerald-400' : 'border-slate-300'
+            }`;
+            el.onclick = (e) => {
+              e.stopPropagation();
+              // Tap back to bank
+              itemsState[item.id] = 'bank';
+              selectedItemId = null;
+              render();
+            };
+            el.innerHTML = `
+              <i class="fa-solid ${item.icon} ${item.color}"></i>
+              <span class="text-[10px] text-slate-700 font-bold truncate">${item.name}</span>
+            `;
+            targetBinSlot.appendChild(el);
+          }
+        }
+      });
+
+      document.getElementById('placedCount').innerText = placedTotal;
+    }
+
+    function onBinClick(binCategory) {
+      if (selectedItemId) {
+        itemsState[selectedItemId] = binCategory;
+        selectedItemId = null;
+        render();
+      }
+    }
+
+    // Drag and Drop Logic
+    function handleDragStart(e, id) {
+      draggedItemId = id;
+      e.dataTransfer.setData('text/plain', id);
+      e.target.classList.add('dragging');
+    }
+
+    function handleDragEnd(e) {
+      e.target.classList.remove('dragging');
+    }
+
+    function handleDragOver(e) {
+      e.preventDefault();
+    }
+
+    function handleDragLeave(e) {}
+
+    function handleDrop(e, binCategory) {
+      e.preventDefault();
+      const id = e.dataTransfer.getData('text/plain') || draggedItemId;
+      if (id) {
+        itemsState[id] = binCategory;
+        selectedItemId = null;
+        draggedItemId = null;
+        render();
+      }
+    }
+
+    function submitAnswers() {
+      const unplaced = Object.values(itemsState).filter(val => val === 'bank').length;
+      if (unplaced > 0) {
+        alert('Please sort all items into a bin before submitting!');
+        return;
+      }
+
+      let score = 0;
+      const listEl = document.getElementById('modalList');
+      listEl.innerHTML = '';
+
+      ITEMS_DATA.forEach(item => {
+        const userChoice = itemsState[item.id];
+        const isCorrect = userChoice === item.category;
+        if (isCorrect) score++;
+
+        const row = document.createElement('div');
+        row.className = `p-2.5 rounded-lg border flex items-center justify-between text-xs font-semibold ${
+          isCorrect ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-rose-50 border-rose-200 text-rose-900'
+        }`;
+        row.innerHTML = `
+          <div class="flex items-center gap-2">
+            <i class="fa-solid ${item.icon} text-sm"></i>
+            <span>${item.name}</span>
+          </div>
+          <div class="flex items-center gap-1 font-bold">
+            ${isCorrect 
+              ? `<span class="text-emerald-600"><i class="fa-solid fa-circle-check"></i> Correct</span>` 
+              : `<span class="text-rose-600"><i class="fa-solid fa-circle-xmark"></i> Correct: ${item.category}</span>`}
+          </div>
+        `;
+        listEl.appendChild(row);
+      });
+
+      const modal = document.getElementById('resultModal');
+      const icon = document.getElementById('modalIcon');
+      const title = document.getElementById('modalTitle');
+      const subtitle = document.getElementById('modalSubtitle');
+
+      if (score === ITEMS_DATA.length) {
+        icon.className = 'w-16 h-16 rounded-full mx-auto flex items-center justify-center text-3xl bg-emerald-100 text-emerald-600';
+        icon.innerHTML = '<i class="fa-solid fa-trophy"></i>';
+        title.innerText = 'Perfect Score!';
+        subtitle.innerText = `You correctly sorted all ${score}/${ITEMS_DATA.length} items!`;
+      } else {
+        icon.className = 'w-16 h-16 rounded-full mx-auto flex items-center justify-center text-3xl bg-amber-100 text-amber-600';
+        icon.innerHTML = '<i class="fa-solid fa-star-half-stroke"></i>';
+        title.innerText = 'Good Effort!';
+        subtitle.innerText = `You scored ${score} out of ${ITEMS_DATA.length}. Check your results below:`;
+      }
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('resultModal').classList.add('hidden');
+      initGame();
+    }
+
+    function resetGame() {
+      initGame();
+    }
+
+    function handleBack() {
+      alert('Back button clicked (can trigger screen navigation in MIT App Inventor).');
+    }
+
+    // Initialize game on load
+    initGame();
+  </script>
+</body>
+</html>
